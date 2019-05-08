@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.netease.mini.bietuola.mapper.UserMapper">
+
+
+    <resultMap type="com.netease.mini.bietuola.entity.User" id="BaseResultMap">
+        <result property="id" column="id"/>
+        <result property="nickname" column="nickname"/>
+        <result property="passwordMd5" column="password_md5"/>
+        <result property="phone" column="phone"/>
+        <result property="avatarUrl" column="avatar_url"/>
+        <result property="gender" column="gender"/>
+        <result property="age" column="age"/>
+        <result property="desc" column="desc"/>
+        <result property="amount" column="amount"/>
+        <result property="score" column="score"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="status" column="status"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, nickname, password_md5, phone, avatar_url, gender, age, desc, amount, score, create_time, update_time, status
+    </sql>
+
+    <sql id="Alias_Column_List">
+        u.id, u.nickname, u.password_md5, u.phone, u.avatar_url, u.gender, u.age, u.desc, u.amount, u.score, u.create_time, u.update_time, u.status
+    </sql>
+
+    <select id="getByPhone" resultMap="BaseResultMap">
+        select * from user where phone = #{phone} limit 1
+    </select>
+
+
+    <sql id="cols">
+        nickname,password_md5,phone,avatar_url,gender,age,`desc`,amount,score,create_time,update_time,status
+    </sql>
+
+    <select id="getAllUserByTeamId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        select <include refid="Alias_Column_List"/>
+        from user as u
+        where id in
+        (
+        select user_id
+        from user_team
+        where team_id=#{teamId}
+        )
+    </select>
+
+    <select id="findUserByUserId" resultMap="BaseResultMap">
+      SELECT * from user WHERE id = #{id}
+    </select>
+
+    <select id="countByPhone" resultType="_int">
+        SELECT COUNT(*) FROM user WHERE phone = #{phone}
+    </select>
+
+    <select id="getBaseInfoById" resultMap="BaseResultMap">
+        SELECT
+          id, nickname, phone, avatar_url, gender, age, `desc`, amount, score
+        FROM user
+        WHERE id = #{id} AND status = 0
+    </select>
+
+    <insert id="save" parameterType="User" useGeneratedKeys="true" keyProperty="id">
+      INSERT INTO
+        user (<include refid="cols"/>)
+      VALUES (
+        #{nickname},#{passwordMd5},#{phone},#{avatarUrl},#{gender},#{age},#{desc},#{amount},#{score},#{createTime},#{updateTime},#{status}
+        )
+    </insert>
+
+    <update id="updateByUserId" parameterType="User">
+      UPDATE user set nickname=#{nickname},password_md5=#{passwordMd5},phone=#{phone},
+      avatar_url=#{avatarUrl},gender=#{gender},age=#{age},`desc`=#{desc},amount=#{amount},
+      score=#{score},create_time=#{createTime},update_time=#{updateTime},status=#{status}
+      WHERE id=#{id}
+    </update>
+
+   <select id="getAmount" parameterType="long" resultType="BigDecimal">
+       SELECT amount
+       FROM user
+       WHERE id=#{userId}
+   </select>
+
+    <update id="updateAmount">
+        UPDATE user
+        SET amount = #{amount}
+        WHERE id = #{userId}
+    </update>
+
+    <update id="updatePassword">
+      UPDATE user
+      SET password_md5 = #{passwordMd5}
+      WHERE phone = #{phone}
+    </update>
+
+    <update id="updateBaseInfoById" parameterType="com.netease.mini.bietuola.entity.User">
+        UPDATE user
+        SET
+          nickname = #{nickname},
+          avatar_url = #{avatarUrl},
+          gender = #{gender},
+          age = #{age},
+          `desc` = #{desc},
+          update_time = #{updateTime}
+        WHERE
+          id = #{id} AND status = 0
+    </update>
+
+    <update id="updateUserAmount">
+        UPDATE user
+        SET amount = #{amount}+amount
+        WHERE id = #{userId}
+    </update>
+
+
+</mapper>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.netease.mini.bietuola.mapper.CategoryMapper">
+
+    <resultMap type="com.netease.mini.bietuola.entity.Category" id="BaseResultMap">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="imgUrl" column="img_url"/>
+        <result property="score" column="score"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+      id, name, img_url, score
+    </sql>
+
+    <select id="selectScoreById" parameterType="java.lang.Long" resultType="java.lang.Integer">
+        select score
+        from category
+        where id=#{id}
+    </select>
+
+    <select id="listcategory" resultMap="BaseResultMap">
+        SELECT id, name, img_url, score FROM category
+    </select>
+
+</mapper>

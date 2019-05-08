@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.netease.mini.bietuola.mapper.UserTeamMapper">
+
+
+    <resultMap type="com.netease.mini.bietuola.entity.UserTeam" id="BaseResultMap">
+        <result property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="teamId" column="team_id"/>
+        <result property="createTime" column="create_time"/>
+        <result property="awardAmount" column="award_amount"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, user_id, team_id, create_time, award_amount
+    </sql>
+
+    <update id="updateAwardAmount">
+      UPDATE user_team
+      SET award_amount = #{fee}
+      WHERE user_id = #{userId} AND team_id = #{teamId}
+    </update>
+
+    <select id="selectAwardAmountByUserIdTeamId" parameterType="map" resultType="java.math.BigDecimal">
+        select award_amount
+        from user_team
+        where team_id=#{teamId}
+        and user_id=#{userId}
+    </select>
+
+    <select id="findUserTeamByUserId" resultMap="BaseResultMap">
+      SELECT * from user_team WHERE user_id= #{userId}
+    </select>
+
+    <select id="findTeamJoinNum" resultType="long">
+        SELECT count(*) from user_team WHERE team_id=#{teamId}
+    </select>
+
+    <select id="findUserTeamByUserIdAndTeamId" resultMap="BaseResultMap">
+        SELECT * FROM user_team WHERE user_id= #{userId} and team_id = #{teamId}
+    </select>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_team(user_id, team_id, create_time, award_amount)
+        VALUES (#{userId}, #{teamId}, #{createTime}, #{awardAmount})
+    </insert>
+
+</mapper>

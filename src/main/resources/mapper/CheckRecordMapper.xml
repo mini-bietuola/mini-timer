@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.netease.mini.bietuola.mapper.CheckRecordMapper">
+
+
+    <resultMap type="com.netease.mini.bietuola.entity.CheckRecord" id="BaseResultMap">
+        <result property="id" column="id"/>
+        <result property="userTeamId" column="user_team_id"/>
+        <result property="checkTime" column="check_time"/>
+    </resultMap>
+
+    <select id="findCheckRecordByUserTeamId" resultMap="BaseResultMap">
+      SELECT * from check_record WHERE user_team_id = #{userTeamId}
+    </select>
+
+    <insert id="save">
+      INSERT INTO check_record(user_team_id,check_time) VALUES (#{userTeamId},#{checkTime})
+    </insert>
+
+    <select id="CheckStatus" resultMap="BaseResultMap">
+        SELECT * from check_record WHERE user_team_id = #{userTeamId} and check_time>=#{startTime} and check_time<![CDATA[ <= ]]>#{endTime}
+    </select>
+
+    <select id="CountCheckTimeByUserId" parameterType="map" resultType="java.lang.Integer">
+        select count(1)
+        from check_record
+        where user_team_id=
+        (
+        select id
+        from user_team
+        where user_id=#{userId}
+        and team_id=#{teamId}
+        )
+    </select>
+
+    <select id="queryCheckTimeByTeamId" resultMap="checkTimeMap">
+        SELECT ut.user_id, count(*) times from check_record u inner join
+        (SELECT id,user_id from user_team WHERE team_id = #{teamId}) ut
+        on u.user_team_id = ut.id
+        group by ut.user_id
+    </select>
+
+    <resultMap id="checkTimeMap" type="map">
+        <result column="user_id" property="userId" javaType="long"  />
+        <result column="times" property="times" javaType="long" />
+    </resultMap>
+
+</mapper>

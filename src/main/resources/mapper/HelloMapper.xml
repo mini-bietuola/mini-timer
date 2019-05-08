@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.netease.mini.bietuola.mapper.HelloMapper">
+  <resultMap id="BaseResultMap" type="com.netease.mini.bietuola.entity.Hello">
+      <result column="id" jdbcType="BIGINT" property="id" />
+      <result column="name" jdbcType="VARCHAR" property="name" />
+      <result column="age" jdbcType="INTEGER" property="age" />
+      <result column="price" jdbcType="DOUBLE" property="price" />
+      <result column="create_time" jdbcType="BIGINT" property="createTime" />
+      <result column="day" jdbcType="INTEGER" property="day" />
+      <result column="role" jdbcType="TINYINT" property="role" />
+  </resultMap>
+
+    <select id="listHello" resultMap="BaseResultMap">
+    SELECT id, name, age, price, create_time, day, role FROM hello
+    </select>
+
+    <insert id="save" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO hello(name, age, price, create_time, day, role)
+        VALUES (#{name},#{age},#{price},#{createTime},#{day},#{role})
+    </insert>
+
+    <update id="update">
+        UPDATE hello
+        SET name = #{name}
+        WHERE id = #{id}
+    </update>
+
+</mapper>
