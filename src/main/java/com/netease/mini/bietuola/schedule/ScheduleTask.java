@@ -45,7 +45,7 @@ public class ScheduleTask {
 
     @Scheduled(cron = "5 0 0 * * ?")
     public void task() {
-        String key = Constants.REDIS_LOCK_PREFIX + "teamStateChangeTask";
+        String key = Constants.REDIS_LOCK_PREFIX + "teamStateChangeTask:finish";
         RedisLock lock = redisService.getLock(key);
         boolean isLocked = lock.tryLock(30);
         if (isLocked) {
@@ -92,7 +92,7 @@ public class ScheduleTask {
 
     @Scheduled(cron = "10 0 0 * * ?")
     public void task2() {
-        String key = Constants.REDIS_LOCK_PREFIX + "teamStateChangeTask";
+        String key = Constants.REDIS_LOCK_PREFIX + "teamStateChangeTask:fail";
         RedisLock lock = redisService.getLock(key);
         boolean isLocked = lock.tryLock(30);
         if (isLocked) {
@@ -139,7 +139,7 @@ public class ScheduleTask {
         doChangeRecuitToFailAndRefund(teams);
     }
 
-    private void doChangeRecuitToFailAndRefund(List<Team> teams) {
+    public void doChangeRecuitToFailAndRefund(List<Team> teams) {
         if (teams != null && !teams.isEmpty()) {
             Map<Long, BigDecimal> teamIdFeeMap = new HashMap<>();
             for (Team t: teams) {

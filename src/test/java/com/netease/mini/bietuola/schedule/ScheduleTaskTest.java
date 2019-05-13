@@ -1,6 +1,7 @@
 package com.netease.mini.bietuola.schedule;
 
 import com.netease.mini.bietuola.constant.TeamStatus;
+import com.netease.mini.bietuola.entity.Team;
 import com.netease.mini.bietuola.entity.User;
 import com.netease.mini.bietuola.mapper.TeamMapper;
 import org.junit.Before;
@@ -10,8 +11,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by zhang on 2019/5/6.
@@ -55,4 +61,30 @@ public class ScheduleTaskTest {
     public void testChangeRecuit() {
         teamMapper.changeWaitingToProcessing(System.currentTimeMillis());
     }
+
+    @Test
+    public void testChangeTeamStatus() {
+//        List<Team> teams = teamMapper.listRecuitToFailTeamForFullPeople(System.currentTimeMillis());
+//        for (Team t: teams) {
+//            System.out.println(t.getId());
+//        }
+        List<Team> teams = new ArrayList<>();
+        Team t = new Team();
+        t.setId(1L);
+        t.setFee(new BigDecimal(10));
+        teams.add(t);
+        t = new Team();
+        t.setId(5L);
+        t.setFee(new BigDecimal(20));
+        teams.add(t);
+        t = new Team();
+        t.setId(6L);
+        t.setFee(new BigDecimal(30));
+        teams.add(t);
+        scheduleTask.doChangeRecuitToFailAndRefund(teams);
+//        System.out.println((int) (Double.parseDouble("68.6") * 100));
+//        System.out.println(new BigDecimal("68.6").multiply(new BigDecimal(100)).setScale(0, RoundingMode.DOWN).intValue());
+
+    }
+
 }
