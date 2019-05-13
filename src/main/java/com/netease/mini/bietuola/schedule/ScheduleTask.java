@@ -1,43 +1,57 @@
 package com.netease.mini.bietuola.schedule;
 
+import com.netease.mini.bietuola.config.redis.RedisService;
+import com.netease.mini.bietuola.config.redis.component.RedisLock;
+import com.netease.mini.bietuola.constant.Constants;
 import com.netease.mini.bietuola.constant.TeamStatus;
 import com.netease.mini.bietuola.entity.Team;
+import com.netease.mini.bietuola.entity.UserTeam;
 import com.netease.mini.bietuola.mapper.CheckRecordMapper;
 import com.netease.mini.bietuola.mapper.TeamMapper;
 import com.netease.mini.bietuola.mapper.UserMapper;
 import com.netease.mini.bietuola.mapper.UserTeamMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by zhang on 2019/5/6.
  */
 @Component
 public class ScheduleTask {
+    private static final Logger LOG = LoggerFactory.getLogger(ScheduleTask.class);
 
     private final TeamMapper teamMapper;
     private final CheckRecordMapper checkRecordMapper;
     private final UserMapper userMapper;
     private final UserTeamMapper userTeamMapper;
+    private final RedisService redisService;
 
     @Autowired
-    public ScheduleTask(TeamMapper teamMapper, CheckRecordMapper checkRecordMapper, UserMapper userMapper, UserTeamMapper userTeamMapper) {
+    public ScheduleTask(TeamMapper teamMapper, CheckRecordMapper checkRecordMapper, UserMapper userMapper, UserTeamMapper userTeamMapper, RedisService redisService) {
         this.teamMapper = teamMapper;
         this.checkRecordMapper = checkRecordMapper;
         this.userMapper = userMapper;
         this.userTeamMapper = userTeamMapper;
+        this.redisService = redisService;
     }
 
-    @Scheduled(cron = "30 0 0 * * ?")
+    @Scheduled(cron = "5 0 0 * * ?")
     public void task() {
-        teamStatusChange();
-        System.out.println("进行中-->已结束，执行定时任务");
+        String key = Constants.REDIS_LOCK_PREFIX + "teamStateChangeTask";
+        RedisLock lock = redisService.getLock(key);
+        boolean isLocked = lock.tryLock(30);
+        if (isLocked) {
+            LOG.info("定时任务，小组状态转换：进行中-->已结束");
+            teamStatusChange();
+        }
     }
 
     /**
@@ -78,36 +92,79 @@ public class ScheduleTask {
 
     @Scheduled(cron = "10 0 0 * * ?")
     public void task2() {
-        changeRecuit();
-        System.out.println("招募中-->招募失败；招募完成待开始-->进行中，执行定时任务");
+        String key = Constants.REDIS_LOCK_PREFIX + "teamStateChangeTask";
+        RedisLock lock = redisService.getLock(key);
+        boolean isLocked = lock.tryLock(30);
+        if (isLocked) {
+            changeWaitingToProcessing();
+            changeRecuitToFailForSchedule();
+            changeRecuitToFailForFullPeople();
+        }
     }
 
     /**
-     * 招募完成待开始-->进行中；招募中-->招募失败
+     * 招募完成待开始-->进行中
      */
-    public void changeRecuit() {
-        long current = System.currentTimeMillis();
+    public void changeWaitingToProcessing() {
         // 招募完成待开始-->进行中
-        teamMapper.changeWaitingToProcessing(current);
+        LOG.info("定时任务，小组状态转换：招募完成待开始-->进行中");
+        teamMapper.changeWaitingToProcessing(System.currentTimeMillis());
 //        List<Team> waitingTeams = teamMapper.findTeamByActivityStatus(TeamStatus.WAITING_START);
 //        for (Team t: waitingTeams) {
 //            Long startDate = t.getStartDate();
 //            long current = System.currentTimeMillis();
-//            if (current > startDate) { // todo 可在sql中直接加入该过滤条件以及修改状态操作，整过程只要一条sql即可
+//            if (current > startDate) {
 //                teamMapper.updateStatus(startDate, TeamStatus.PROCCESSING, t.getId());
 //            }
 //        }
-        // 招募中-->招募失败
-        teamMapper.changeRecuitToFailForSchedule(current); // 针对预设时间类型
-        teamMapper.changeRecuitToFailForFullPeople(current); // 针对人满即开类型
-//        List<Team> recuitTeams = teamMapper.findTeamByActivityStatus(TeamStatus.RECUIT);
-//        for (Team t: recuitTeams) {
-//            Long startDate = t.getStartDate();
-//            long current = System.currentTimeMillis();
-//            if (current > startDate) {
-//                teamMapper.updateStatus(startDate, TeamStatus.RECUIT_FAILED, t.getId());
-//            }
-//        }
+    }
+
+    /**
+     * 招募中-->招募失败，针对预设时间类型，注意需要退钱
+     */
+    @Transactional
+    public void changeRecuitToFailForSchedule() {
+        LOG.info("定时任务，小组状态转换：招募中-->招募失败，预设时间类型");
+        List<Team> teams = teamMapper.listRecuitToFailTeamForSchedule(System.currentTimeMillis());
+        doChangeRecuitToFailAndRefund(teams);
+    }
+
+    /**
+     * 招募中-->招募失败，针对人满即开类型，注意需要退钱
+     */
+    @Transactional
+    public void changeRecuitToFailForFullPeople() {
+        LOG.info("定时任务，小组状态转换：招募中-->招募失败，预设人满即开");
+        List<Team> teams = teamMapper.listRecuitToFailTeamForFullPeople(System.currentTimeMillis());
+        doChangeRecuitToFailAndRefund(teams);
+    }
+
+    private void doChangeRecuitToFailAndRefund(List<Team> teams) {
+        if (teams != null && !teams.isEmpty()) {
+            Map<Long, BigDecimal> teamIdFeeMap = new HashMap<>();
+            for (Team t: teams) {
+                teamIdFeeMap.put(t.getId(), t.getFee());
+            }
+            Set<Long> teamIds = teamIdFeeMap.keySet();
+            teamMapper.updateStatusByTeamIds(teamIds, TeamStatus.RECUIT_FAILED);
+            List<UserTeam> uts = userTeamMapper.listTeamIdAndUserIdByTeamIds(teamIds);
+            Map<Long, Set<Long>> teamIdMapUserIds = new HashMap<>();
+            for (UserTeam ut: uts) {
+                Long teamId = ut.getTeamId();
+                Set<Long> userIds = teamIdMapUserIds.get(teamId);
+                if (userIds == null) {
+                    teamIdMapUserIds.put(teamId, new HashSet<>(Collections.singletonList(ut.getUserId())));
+                } else {
+                    userIds.add(ut.getUserId());
+                }
+            }
+            for (Map.Entry<Long, Set<Long>> tmu: teamIdMapUserIds.entrySet()) {
+                Long teamId = tmu.getKey();
+                Set<Long> userIds = tmu.getValue();
+                BigDecimal fee = teamIdFeeMap.get(teamId);
+                userMapper.addAmountbyUserIds(userIds, fee);
+            }
+        }
     }
 
 }

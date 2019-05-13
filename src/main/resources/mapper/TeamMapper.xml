@@ -94,7 +94,7 @@
         SELECT * from team
         WHERE id=#{teamId}
     </select>
-    
+
     <update id="changeWaitingToProcessing" parameterType="long">
     <![CDATA[
       UPDATE team
@@ -117,5 +117,30 @@
       SET activity_status = 2
       WHERE activity_status = 1 AND start_type = 1 AND #{current} > (create_time+max_recuit_date*86400000)
     ]]>
+    </update>
+
+    <select id="listRecuitToFailTeamForSchedule" resultMap="BaseResultMap">
+    <![CDATA[
+      SELECT id, fee
+      FROM team
+      WHERE activity_status = 1 AND start_type = 2 AND #{current} > start_date
+    ]]>
+    </select>
+
+    <select id="listRecuitToFailTeamForFullPeople" resultMap="BaseResultMap">
+    <![CDATA[
+      SELECT id, fee
+      FROM team
+      WHERE activity_status = 1 AND start_type = 1 AND #{current} > (create_time+max_recuit_date*86400000)
+    ]]>
+    </select>
+
+    <update id="updateStatusByTeamIds">
+        UPDATE team
+        SET activity_status = #{teamStatus}
+        WHERE id IN
+        <foreach collection="teamIds" open=" (" close=") " item="teamId" separator=",">
+            #{teamId}
+        </foreach>
     </update>
 </mapper>

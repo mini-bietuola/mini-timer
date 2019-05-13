@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by zhang on 2019/5/1.
@@ -53,4 +54,11 @@ public interface UserTeamMapper {
      * @param fee
      */
     int updateAwardAmount(@Param("userId") Long userId, @Param("teamId") Long teamId, @Param("fee") BigDecimal fee);
+
+    /**
+     * 根据teamIds查询参与记录
+     * @param teamIds
+     * @return
+     */
+    List<UserTeam> listTeamIdAndUserIdByTeamIds(@Param("teamIds") Set<Long> teamIds);
 }

@@ -115,5 +115,14 @@
         WHERE id = #{userId}
     </update>
 
+    <update id="addAmountbyUserIds">
+        UPDATE user
+        SET amount = amount + #{amount}
+        WHERE id IN
+        <foreach collection="userIds" open=" (" close=") " item="userId" separator=",">
+          #{userId}
+        </foreach>
+    </update>
+
 
 </mapper>

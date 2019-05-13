@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import com.netease.mini.bietuola.entity.User;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @Description
@@ -68,4 +69,11 @@ public interface UserMapper {
      */
     int updateUserAmount(@Param("amount") BigDecimal amount,@Param("userId") Long id);
 
+    /**
+     * 给userIds 批量加钱
+     * @param userIds
+     * @param amount
+     * @return
+     */
+    int addAmountbyUserIds(@Param("userIds") Set<Long> userIds,@Param("amount") BigDecimal amount);
 }

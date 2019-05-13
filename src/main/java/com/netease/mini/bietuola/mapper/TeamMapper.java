@@ -5,6 +5,7 @@ import com.netease.mini.bietuola.entity.Team;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Set;
 
 
 import com.netease.mini.bietuola.entity.Team;
@@ -114,4 +115,15 @@ public interface TeamMapper {
      * @param current
      */
     void changeRecuitToFailForFullPeople(@Param("current") Long current);
+
+    /**
+     * 定时任务，查找需要进行下述状态转变的小组列表：招募中-->招募失败，针对预设时间类型
+     * @param current
+     * @return
+     */
+    List<Team> listRecuitToFailTeamForSchedule(@Param("current") Long current);
+
+    int updateStatusByTeamIds(@Param("teamIds") Set<Long> teamIds,@Param("teamStatus") TeamStatus teamStatus);
+
+    List<Team> listRecuitToFailTeamForFullPeople(@Param("current") Long current);
 }

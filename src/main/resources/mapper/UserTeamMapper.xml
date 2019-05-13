@@ -40,9 +40,19 @@
     <select id="findUserTeamByUserIdAndTeamId" resultMap="BaseResultMap">
         SELECT * FROM user_team WHERE user_id= #{userId} and team_id = #{teamId}
     </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO user_team(user_id, team_id, create_time, award_amount)
         VALUES (#{userId}, #{teamId}, #{createTime}, #{awardAmount})
     </insert>
+
+    <select id="listTeamIdAndUserIdByTeamIds" resultMap="BaseResultMap">
+        SELECT user_id, team_id
+        FROM user_team
+        WHERE team_id IN
+        <foreach collection="teamIds" open=" (" close=") " item="teamId" separator=",">
+          #{teamId}
+        </foreach>
+    </select>
 
 </mapper>
