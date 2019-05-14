@@ -1,5 +1,6 @@
 package com.netease.mini.bietuola.schedule;
 
+import com.netease.mini.bietuola.config.jpush.JPushService;
 import com.netease.mini.bietuola.config.redis.RedisService;
 import com.netease.mini.bietuola.config.redis.component.RedisLock;
 import com.netease.mini.bietuola.constant.Constants;
@@ -10,6 +11,7 @@ import com.netease.mini.bietuola.mapper.CheckRecordMapper;
 import com.netease.mini.bietuola.mapper.TeamMapper;
 import com.netease.mini.bietuola.mapper.UserMapper;
 import com.netease.mini.bietuola.mapper.UserTeamMapper;
+import com.netease.mini.bietuola.web.util.DateUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,17 +35,19 @@ public class ScheduleTask {
     private final UserMapper userMapper;
     private final UserTeamMapper userTeamMapper;
     private final RedisService redisService;
+    private final JPushService jPushService;
 
     @Autowired
-    public ScheduleTask(TeamMapper teamMapper, CheckRecordMapper checkRecordMapper, UserMapper userMapper, UserTeamMapper userTeamMapper, RedisService redisService) {
+    public ScheduleTask(TeamMapper teamMapper, CheckRecordMapper checkRecordMapper, UserMapper userMapper, UserTeamMapper userTeamMapper, RedisService redisService, JPushService jPushService) {
         this.teamMapper = teamMapper;
         this.checkRecordMapper = checkRecordMapper;
         this.userMapper = userMapper;
         this.userTeamMapper = userTeamMapper;
         this.redisService = redisService;
+        this.jPushService = jPushService;
     }
 
-    @Scheduled(cron = "5 0 0 * * ?")
+    @Scheduled(cron = "5 0/5 * * * ?")
     public void task() {
         String key = Constants.REDIS_LOCK_PREFIX + "teamStateChangeTask:finish";
         RedisLock lock = redisService.getLock(key);
@@ -60,16 +64,26 @@ public class ScheduleTask {
     public void teamStatusChange() {
         // todo 记录数过多时的优化处理
         List<Team> teamList = teamMapper.findTeamByActivityStatus(TeamStatus.PROCCESSING);
+        //当前时间
+        Long current = System.currentTimeMillis();
         for (Team team : teamList) {
             //打卡开始时间
             Long timeCheck = team.getStartDate();
             //打卡天数
             Integer day = team.getDuration();
-            //当前时间
-            Long current = System.currentTimeMillis();
             if (current >= timeCheck + day * 24 * 60 * 60 * 1000) {
-                //小组状态由进行转换为已结束
                 Long teamId = team.getId();
+                // 向小组内所有成员发送结束消息
+                String alert = "您的小组\"" + team.getName() + "\"打卡活动已结束，请及时查看";
+                String title = "小组结束通知";
+                String sendTime = DateUtil.format(current, "yyyy-MM-dd HH:mm:ss");
+                String name = "小组结束通知";
+                Map<String, String> infoMap = new HashMap<>();
+                infoMap.put("route", "Details");
+                infoMap.put("teamId", teamId.toString());
+                String[] tags = {"teamId_" + teamId};
+                jPushService.sendSingleNotification(alert, title, sendTime, name, infoMap, tags);
+                //小组状态由进行转换为已结束
                 teamMapper.updateStatus(team.getStartDate(), TeamStatus.FINISHED, teamId);
                 //资金的计算工作
                 List<Map<String, Long>> mapList = checkRecordMapper.queryCheckTimeByTeamId(teamId);
@@ -90,7 +104,7 @@ public class ScheduleTask {
         }
     }
 
-    @Scheduled(cron = "10 0 0 * * ?")
+    @Scheduled(cron = "5 0/5 * * * ?")
     public void task2() {
         String key = Constants.REDIS_LOCK_PREFIX + "teamStateChangeTask:fail";
         RedisLock lock = redisService.getLock(key);
@@ -108,15 +122,40 @@ public class ScheduleTask {
     public void changeWaitingToProcessing() {
         // 招募完成待开始-->进行中
         LOG.info("定时任务，小组状态转换：招募完成待开始-->进行中");
-        teamMapper.changeWaitingToProcessing(System.currentTimeMillis());
-//        List<Team> waitingTeams = teamMapper.findTeamByActivityStatus(TeamStatus.WAITING_START);
-//        for (Team t: waitingTeams) {
-//            Long startDate = t.getStartDate();
-//            long current = System.currentTimeMillis();
-//            if (current > startDate) {
-//                teamMapper.updateStatus(startDate, TeamStatus.PROCCESSING, t.getId());
-//            }
-//        }
+//        teamMapper.changeWaitingToProcessing(System.currentTimeMillis());
+        List<Team> waitingTeams = teamMapper.findTeamByActivityStatus(TeamStatus.WAITING_START);
+        long current = System.currentTimeMillis();
+        for (Team team: waitingTeams) {
+            Long startDate = team.getStartDate();
+            if (current > startDate) {
+                Long teamId = team.getId();
+                // 向小组内所有成员发送开始消息，只发一次
+                String alert = "您的小组\"" + team.getName() + "\"今天就要开始打卡啦~请做好准备";
+                String title = "小组开始通知";
+                String sendTime = DateUtil.format(current, "yyyy-MM-dd HH:mm:ss");
+                String name = "小组开始通知";
+                Map<String, String> infoMap = new HashMap<>();
+                infoMap.put("route", "Details");
+                infoMap.put("teamId", teamId.toString());
+                String[] tags = {"teamId_" + teamId};
+                jPushService.sendSingleNotification(alert, title, sendTime, name, infoMap, tags);
+                // 发送每天一次的打卡通知消息
+                Integer minutes = team.getStartTime();
+                String sendTime2 = DateUtil.format(DateUtil.getTodayStart() + minutes * 60 * 1000, "HH:mm:ss");
+                String alert2 = "您的小组\"" + team.getName() + "\"打卡时间为：" + sendTime2.substring(0, 5) + "，不要忘记打卡噢";
+                String title2 = "打卡时间马上就要到啦~";
+                String startTime2 = DateUtil.format(current, "yyyy-MM-dd HH:mm:ss");
+                String endTime2 = DateUtil.format(current + team.getDuration() * 24 * 60 * 60 * 1000, "yyyy-MM-dd HH:mm:ss");
+                String name2 = "小组每日打卡通知";
+                Map<String, String> infoMap2 = new HashMap<>();
+                infoMap2.put("route", "TeamIM");
+                infoMap2.put("teamId", teamId.toString());
+                String[] tags2 = {"teamId_" + teamId};
+                jPushService.sendDailyNotification(alert2, title2, sendTime2, startTime2, endTime2, name2, 1, infoMap2, tags2);
+                // 更改状态
+                teamMapper.updateStatus(startDate, TeamStatus.PROCCESSING, teamId);
+            }
+        }
     }
 
     /**
