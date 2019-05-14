@@ -81,7 +81,7 @@ public class ScheduleTask {
                 Map<String, String> infoMap = new HashMap<>();
                 infoMap.put("route", "Details");
                 infoMap.put("teamId", teamId.toString());
-                String[] tags = {"teamId_" + teamId};
+                String[] tags = {"team_" + teamId};
                 jPushService.sendSingleNotification(alert, title, sendTime, name, infoMap, tags);
                 //小组状态由进行转换为已结束
                 teamMapper.updateStatus(team.getStartDate(), TeamStatus.FINISHED, teamId);
@@ -137,7 +137,7 @@ public class ScheduleTask {
                 Map<String, String> infoMap = new HashMap<>();
                 infoMap.put("route", "Details");
                 infoMap.put("teamId", teamId.toString());
-                String[] tags = {"teamId_" + teamId};
+                String[] tags = {"team_" + teamId};
                 jPushService.sendSingleNotification(alert, title, sendTime, name, infoMap, tags);
                 // 发送每天一次的打卡通知消息
                 Integer minutes = team.getStartTime();
@@ -150,7 +150,7 @@ public class ScheduleTask {
                 Map<String, String> infoMap2 = new HashMap<>();
                 infoMap2.put("route", "TeamIM");
                 infoMap2.put("teamId", teamId.toString());
-                String[] tags2 = {"teamId_" + teamId};
+                String[] tags2 = {"team_" + teamId};
                 jPushService.sendDailyNotification(alert2, title2, sendTime2, startTime2, endTime2, name2, 1, infoMap2, tags2);
                 // 更改状态
                 teamMapper.updateStatus(startDate, TeamStatus.PROCCESSING, teamId);
