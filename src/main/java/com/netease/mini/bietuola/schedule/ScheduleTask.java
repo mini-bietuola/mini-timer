@@ -76,7 +76,8 @@ public class ScheduleTask {
                 // 向小组内所有成员发送结束消息
                 String alert = "您的小组\"" + team.getName() + "\"打卡活动已结束，请及时查看";
                 String title = "小组结束通知";
-                String sendTime = DateUtil.format(current, "yyyy-MM-dd HH:mm:ss");
+                // 推送消息必须在当前时间上延迟若干秒
+                String sendTime = DateUtil.format(System.currentTimeMillis() + 10000, "yyyy-MM-dd HH:mm:ss");
                 String name = "小组结束通知";
                 Map<String, String> infoMap = new HashMap<>();
                 infoMap.put("route", "Details");
@@ -127,12 +128,12 @@ public class ScheduleTask {
         long current = System.currentTimeMillis();
         for (Team team: waitingTeams) {
             Long startDate = team.getStartDate();
-            if (current > startDate) {
+            if (current >= startDate) {
                 Long teamId = team.getId();
                 // 向小组内所有成员发送开始消息，只发一次
                 String alert = "您的小组\"" + team.getName() + "\"今天就要开始打卡啦~请做好准备";
                 String title = "小组开始通知";
-                String sendTime = DateUtil.format(current, "yyyy-MM-dd HH:mm:ss");
+                String sendTime = DateUtil.format(System.currentTimeMillis() + 10000, "yyyy-MM-dd HH:mm:ss");
                 String name = "小组开始通知";
                 Map<String, String> infoMap = new HashMap<>();
                 infoMap.put("route", "Details");
@@ -142,10 +143,11 @@ public class ScheduleTask {
                 // 发送每天一次的打卡通知消息
                 Integer minutes = team.getStartTime();
                 String sendTime2 = DateUtil.format(DateUtil.getTodayStart() + minutes * 60 * 1000, "HH:mm:ss");
-                String alert2 = "您的小组\"" + team.getName() + "\"打卡时间为：" + sendTime2.substring(0, 5) + "，不要忘记打卡噢";
+                String alert2 = "您的小组\"" + team.getName() + "\"打卡开始时间为：" + sendTime2.substring(0, 5) + "，不要忘记打卡噢";
                 String title2 = "打卡时间马上就要到啦~";
-                String startTime2 = DateUtil.format(current, "yyyy-MM-dd HH:mm:ss");
-                String endTime2 = DateUtil.format(current + team.getDuration() * 24 * 60 * 60 * 1000, "yyyy-MM-dd HH:mm:ss");
+                long nowDelay = System.currentTimeMillis() + 10000;
+                String startTime2 = DateUtil.format(nowDelay, "yyyy-MM-dd HH:mm:ss");
+                String endTime2 = DateUtil.format(nowDelay + team.getDuration() * 24 * 60 * 60 * 1000, "yyyy-MM-dd HH:mm:ss");
                 String name2 = "小组每日打卡通知";
                 Map<String, String> infoMap2 = new HashMap<>();
                 infoMap2.put("route", "TeamIM");

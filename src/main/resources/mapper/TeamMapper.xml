@@ -99,7 +99,7 @@
     <![CDATA[
       UPDATE team
       SET activity_status = 3
-      WHERE activity_status = 5 AND #{current} > start_date
+      WHERE activity_status = 5 AND #{current} >= start_date
     ]]>
     </update>
     
@@ -107,7 +107,7 @@
     <![CDATA[
       UPDATE team
       SET activity_status = 2
-      WHERE activity_status = 1 AND start_type = 2 AND #{current} > start_date
+      WHERE activity_status = 1 AND start_type = 2 AND #{current} >= start_date
     ]]>
     </update>
     
@@ -115,7 +115,7 @@
     <![CDATA[
       UPDATE team
       SET activity_status = 2
-      WHERE activity_status = 1 AND start_type = 1 AND #{current} > (create_time+max_recuit_date*86400000)
+      WHERE activity_status = 1 AND start_type = 1 AND #{current} >= (create_time+max_recuit_date*86400000)
     ]]>
     </update>
 
@@ -123,7 +123,7 @@
     <![CDATA[
       SELECT id, fee
       FROM team
-      WHERE activity_status = 1 AND start_type = 2 AND #{current} > start_date
+      WHERE activity_status = 1 AND start_type = 2 AND #{current} >= start_date
     ]]>
     </select>
 
@@ -131,7 +131,7 @@
     <![CDATA[
       SELECT id, fee
       FROM team
-      WHERE activity_status = 1 AND start_type = 1 AND #{current} > (create_time+max_recuit_date*86400000)
+      WHERE activity_status = 1 AND start_type = 1 AND #{current} >= (create_time+max_recuit_date*86400000)
     ]]>
     </select>
 
