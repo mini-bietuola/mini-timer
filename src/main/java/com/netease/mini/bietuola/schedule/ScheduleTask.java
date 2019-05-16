@@ -51,7 +51,7 @@ public class ScheduleTask {
     public void task() {
         String key = Constants.REDIS_LOCK_PREFIX + "teamStateChangeTask:finish";
         RedisLock lock = redisService.getLock(key);
-        boolean isLocked = lock.tryLock(30);
+        boolean isLocked = lock.tryLock(10);
         if (isLocked) {
             LOG.info("定时任务，小组状态转换：进行中-->已结束");
             teamStatusChange();
@@ -61,6 +61,7 @@ public class ScheduleTask {
     /**
      * 小组状态由进行变化为结束
      */
+    @Transactional
     public void teamStatusChange() {
         // todo 记录数过多时的优化处理
         List<Team> teamList = teamMapper.findTeamByActivityStatus(TeamStatus.PROCCESSING);
@@ -109,7 +110,7 @@ public class ScheduleTask {
     public void task2() {
         String key = Constants.REDIS_LOCK_PREFIX + "teamStateChangeTask:fail";
         RedisLock lock = redisService.getLock(key);
-        boolean isLocked = lock.tryLock(30);
+        boolean isLocked = lock.tryLock(10);
         if (isLocked) {
             changeWaitingToProcessing();
             changeRecuitToFailForSchedule();
