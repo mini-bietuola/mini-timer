@@ -24,8 +24,8 @@ import java.util.Map;
 public class JPushService {
     private static final Logger LOG = LoggerFactory.getLogger(JPushService.class);
 
-    private static final String appKey = "8e0890d0c7eea09febe12876";
-    private static final String masterSecret = "d96c79555db5ae0f9a603ad5";
+    private static final String appKey = "";
+    private static final String masterSecret = "";
     ClientConfig clientConfig = ClientConfig.getInstance();
     final JPushClient jpushClient = new JPushClient(masterSecret, appKey, null, clientConfig);
 

@@ -41,8 +41,8 @@ public class NosService {
     private static final int CONNECTION_TIMEOUT = 2000;
     private static final int SOCKET_TIMEOUT = 5000;
 
-    private static final String ACCESS_KEY = "ed10c92cc8844686923747b39116e209";
-    private static final String SECRET_KEY = "c52c6d63ab9e4eb69ea2193e04e8877b";
+    private static final String ACCESS_KEY = "";
+    private static final String SECRET_KEY = "";
 
     private String bucketName;
     private String nosUrlPrefix;
